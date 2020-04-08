@@ -1,0 +1,66 @@
+% === Overview ===
+% Reads instructions from a trace in .gz format directly.
+% One instruction from the trace may generate several "pieces" that contestants will have the opportunity to predict.
+% The number of pieces depend on the number of 64-bit output values. 
+%   For instance :
+%   1. A vector instruction that writes 128-bit registers will cause two pieces to be generated.
+%   2. A scalar instruction that produces two general purpose registers will cause two pieces to be generated.
+%   3. A vector instruction that writes 2 128-bit registers will cause four pieces to be generated.
+%   In general, however, instructions from the trace will only generate a single piece.
+%
+% Schedule instructions according to the dataflow as well as structural constraints (ROB size and superscalar width).
+% Report overall cycle count.
+%
+% v2 changelog :
+% 1. Added memory hierarchy (L1/L2/L3)
+%
+% v3 changelog :
+% 1. Fixed assertions in infrastructure.
+% 2. Added different latency (SlowAlu 4 cycles, FP 3 cycles, all other 1 cycle)
+% 
+% v4 changelog : 
+% 1. Added beginPredictor() and endPredictor() to allow contestants to initialize/finalize state at simulation beginning and end (see cvp.h).
+% 2. Fix "piece handling" code and removed temporary snippet in mypredictor.cc. Infrastructure reports the correct number.
+%
+% v5 changelog
+% 1. Fix VP coverage reporting where predicting a non-predictable instruction would contribute toward correct predictions (now ignored).
+% 2. Switch to Write-allocate policy for stores missing L1 to prevent outlier behavior due to stores leaving the window early due to VP, 
+%    preventing subsequent load from forwarding (instead they would miss the L1 and see increased latency vs. the baseline).
+% v6 changelog 
+% 1. Added non-perfect branch direction/target prediction :
+%    - Direction: 1M entries (1 2-bit ctr per entry), 16 bits of global history
+%    - Target: 1M entries (1 target per entry), 16 bits of global history
+% 2. Added realistic instruction delivery, e.g., stop at taken (disabled by default)
+% 3. Removed boost dependency : This project relies on https://www.cs.unc.edu/Research/compgeom/gzstream/ (LGPL) to stream from compressed traces.
+% 4. Added more efficient baseline value predictor (Stride + FCM).
+
+
+% === COMPILING ===
+% A Makefile is provided to compile the infrastructure.
+% Make sure that lzip is installed as the infrastructure is linking against it.
+
+% === RUNNING ===
+
+-------------------------------------------------------------------------------------------------------------------------------
+./cvp > README
+-------------------------------------------------------------------------------------------------------------------------------
+
+usage:	./cvp
+	[optional: -v to enable value prediction]
+	[optional: -p to enable perfect value prediction (if -v also specified)]
+	[optional: -d to enable perfect data cache]
+	[optional: -b to enable perfect branch prediction (all branch types)]
+	[optional: -i to enable perfect indirect-branch prediction]
+	[optional: -f <pipeline_fill_latency>]
+	[optional: -M <num_ldst_lanes>
+	[optional: -A <num_alu_lanes>
+	[optional: -F <fetch_width>,<fetch_num_branch>,<fetch_stop_at_indirect>,<fetch_stop_at_taken>,<fetch_model_icache>]
+	[optional: -I <log2_ic_size [0-20]>]
+	[optional: -w <window_size>]
+	[REQUIRED: .gz trace file]
+	[optional: contestant's arguments]
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+./cvp -F 16,0,0,0,0 -b -d -v -p 1M.gz >> README
+-------------------------------------------------------------------------------------------------------------------------------

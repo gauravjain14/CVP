@@ -21,14 +21,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Author: Eric Rotenberg (ericro@ncsu.edu)
 
-
 #include <inttypes.h>
 
 bool VP_ENABLE = false;
 bool VP_PERFECT = false;
 uint64_t WINDOW_SIZE = 256;
 uint64_t FETCH_WIDTH = 16;
-uint64_t FETCH_NUM_BRANCH = 0;		// 0: unlimited; >0: finite
+uint64_t FETCH_NUM_BRANCH = 0; // 0: unlimited; >0: finite
 bool FETCH_STOP_AT_INDIRECT = false;
 bool FETCH_STOP_AT_TAKEN = false;
 bool FETCH_MODEL_ICACHE = false;

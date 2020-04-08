@@ -1,0 +1,5 @@
+cvp
+*.o
+*.gz
+lib/*.a
+lib/*.o

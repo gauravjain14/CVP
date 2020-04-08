@@ -23,21 +23,28 @@
 
 CC = g++
 OPT = -O3
-LIBS = -lz -lcvp
+LIBS = -lcvp -lm
 FLAGS = -std=c++11 -L./lib $(LIBS) $(OPT)
+SRD_DIR=lib
 
 OBJ = mypredictor.o
 DEPS = cvp.h mypredictor.h
 
-all: cvp
+all: subsystem cvp
+
+subsystem:
+	$(MAKE) -C $(SRD_DIR)
 
 cvp: $(OBJ)
-	$(CC) $(FLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(FLAGS) -lz
 
 %.o: %.cc $(DEPS)
-	$(CC) $(FLAGS) -c -o $@ $<
+	$(CC) -g -c -o $@ $< $(FLAGS) -lz
 
 .PHONY: clean
 
-clean:
+clean_subsystem:
+	rm -rf $(SRD_DIR)/*.o
+
+clean: clean_subsystem
 	rm -f *.o cvp

@@ -26,9 +26,9 @@ CC = g++
 OPT = -O3
 TOP = ..
 INC = -I$(TOP)
-LIBS =
+LIBS = -lm
 DEFINES = -DGZSTREAM_NAMESPACE=gz
-FLAGS = -std=c++11 $(INC) $(LIBS) $(OPT) $(DEFINES)
+FLAGS = -std=c++11 $(INC) $(OPT) $(DEFINES) $(LIBS)
 
 
 OBJ = cvp.o parameters.o uarchsim.o cache.o bp.o resource_schedule.o gzstream.o
@@ -37,10 +37,10 @@ DEPS = $(TOP)/cvp.h cvp_trace_reader.h fifo.h parameters.h uarchsim.h cache.h bp
 all: libcvp.a
 
 libcvp.a: $(OBJ)
-	ar r $@ $^
+	ar r $@ $^ 
 
 %.o: %.cc $(DEPS)
-	$(CC) $(FLAGS) -c -o $@ $<
+	$(CC) $(FLAGS) -g -c -o $@ $< -lz
 
 
 .PHONY: clean

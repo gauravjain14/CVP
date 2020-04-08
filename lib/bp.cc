@@ -21,7 +21,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Author: Eric Rotenberg (ericro@ncsu.edu)
 
-
 #include <stdio.h>
 #include <inttypes.h>
 #include <assert.h>
@@ -30,10 +29,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parameters.h"
 
 bp_t::bp_t(uint64_t cb_pc_length, uint64_t cb_bhr_length,
-	   uint64_t ib_pc_length, uint64_t ib_bhr_length,
-	   uint64_t ras_size):cb_index(cb_pc_length, cb_bhr_length),
-                              ib_index(ib_pc_length, ib_bhr_length),
-                              ras(ras_size) {
+           uint64_t ib_pc_length, uint64_t ib_bhr_length,
+           uint64_t ras_size) : cb_index(cb_pc_length, cb_bhr_length),
+                                ib_index(ib_pc_length, ib_bhr_length),
+                                ras(ras_size)
+{
    cb = new uint64_t[cb_index.table_size()];
    ib = new uint64_t[ib_index.table_size()];
 
@@ -49,19 +49,22 @@ bp_t::bp_t(uint64_t cb_pc_length, uint64_t cb_bhr_length,
    meas_notctrl_m = 0;
 }
 
-bp_t::~bp_t() {
+bp_t::~bp_t()
+{
 }
 
 // Returns true if instruction is a mispredicted branch.
 // Also updates all branch predictor structures as applicable.
-bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
+bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc)
+{
    bool taken;
    bool pred_taken;
    uint64_t pred_target;
    uint64_t index;
    bool misp;
 
-   if (insn == InstClass::condBranchInstClass) {
+   if (insn == InstClass::condBranchInstClass)
+   {
       // CONDITIONAL BRANCH
 
       // Determine the actual taken/not-taken outcome.
@@ -77,13 +80,15 @@ bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
       misp = (pred_taken != taken);
 
       // Update table of conditional branch predictor.
-      if (taken) {
+      if (taken)
+      {
          if (cb[index] < 3)
-	    cb[index]++;
+            cb[index]++;
       }
-      else {
+      else
+      {
          if (cb[index] > 0)
-	    cb[index]--;
+            cb[index]--;
       }
 
       // Update BHRs of all predictors that have them.
@@ -92,9 +97,11 @@ bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
 
       // Update measurements.
       meas_branch_n++;
-      if (misp) meas_branch_m++;
+      if (misp)
+         meas_branch_m++;
    }
-   else if (insn == InstClass::uncondDirectBranchInstClass) {
+   else if (insn == InstClass::uncondDirectBranchInstClass)
+   {
       // CALL OR JUMP DIRECT
 
       // Target of JAL or J (rd=x0) will be available in either the fetch stage (BTB hit)
@@ -113,7 +120,8 @@ bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
       // Update measurements.
       meas_jumpdir_n++;
    }
-   else if (insn == InstClass::uncondIndirectBranchInstClass) {
+   else if (insn == InstClass::uncondIndirectBranchInstClass)
+   {
 #if 0
       // RISCV ISA spec, Table 2.1, explains rules for inferring a return instruction.
       if (is_link_reg(insn.rs1()) && (!is_link_reg(insn.rd()) || (insn.rs1() != insn.rd()))) {
@@ -132,28 +140,31 @@ bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
       else {
          // NOT RETURN
 #endif
-         if (PERFECT_INDIRECT_PRED) {
-	    misp = false;
-            // Update measurements.
-            meas_jumpind_n++;
-         }
-         else {
-            // Get index for indirect branch predictor.
-            index = ib_index.index(pc);
+      if (PERFECT_INDIRECT_PRED)
+      {
+         misp = false;
+         // Update measurements.
+         meas_jumpind_n++;
+      }
+      else
+      {
+         // Get index for indirect branch predictor.
+         index = ib_index.index(pc);
 
-            // Make prediction.
-            pred_target = ib[index];
+         // Make prediction.
+         pred_target = ib[index];
 
-            // Determine if mispredicted or not.
-            misp = (pred_target != next_pc);
+         // Determine if mispredicted or not.
+         misp = (pred_target != next_pc);
 
-            // Update table of indirect branch predictor.
-            ib[index] = next_pc;
+         // Update table of indirect branch predictor.
+         ib[index] = next_pc;
 
-            // Update measurements.
-            meas_jumpind_n++;
-            if (misp) meas_jumpind_m++;
-         }
+         // Update measurements.
+         meas_jumpind_n++;
+         if (misp)
+            meas_jumpind_m++;
+      }
 #if 0
       }
 
@@ -162,26 +173,30 @@ bool bp_t::predict(InstClass insn, uint64_t pc, uint64_t next_pc) {
          ras.push(pc + 4);
 #endif
    }
-   else {
+   else
+   {
       // not a control-transfer instruction
       misp = (next_pc != pc + 4);
 
       // Update measurements.
       meas_notctrl_n++;
-      if (misp) meas_notctrl_m++;
+      if (misp)
+         meas_notctrl_m++;
    }
 
-   return(misp);
+   return (misp);
 }
 
-inline bool bp_t::is_link_reg(uint64_t x) {
-   return((x == 1) || (x == 5));
+inline bool bp_t::is_link_reg(uint64_t x)
+{
+   return ((x == 1) || (x == 5));
 }
 
 #define BP_OUTPUT(str, n, m, i) \
-	printf("%s%10ld %10ld %5.2lf%% %5.2lf\n", (str), (n), (m), 100.0*((double)(m)/(double)(n)), 1000.0*((double)(m)/(double)(i)))
+   printf("%s%10ld %10ld %5.2lf%% %5.2lf\n", (str), (n), (m), 100.0 * ((double)(m) / (double)(n)), 1000.0 * ((double)(m) / (double)(i)))
 
-void bp_t::output() {
+void bp_t::output()
+{
    uint64_t num_inst = (meas_branch_n + meas_jumpdir_n + meas_jumpind_n + meas_jumpret_n + meas_notctrl_n);
    uint64_t num_misp = (meas_branch_m + meas_jumpind_m + meas_jumpret_m + meas_notctrl_m);
    printf("BRANCH PREDICTION MEASUREMENTS---------------------\n");

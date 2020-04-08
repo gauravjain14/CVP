@@ -21,11 +21,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Author: Eric Rotenberg (ericro@ncsu.edu)
 
-
 #define SCHED_DEPTH_INCREMENT 256
-#define MOD_S(x,y)		((x) & ((y)-1))
+#define MOD_S(x, y) ((x) & ((y)-1))
 
-class resource_schedule {
+class resource_schedule
+{
 private:
    uint64_t *sched;
    uint64_t depth;
