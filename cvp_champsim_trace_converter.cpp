@@ -679,3 +679,15 @@ int main(int argc, char **argv) {
 
     fclose(out);
 }
+
+    std::cout << argv[1] << std::endl;
+    CVPTraceReader reader(argv[1]);
+
+    while(reader.readInstr()) {
+        reader.mInstr.printInstr();
+
+#ifdef CHAMPSIM_FORMAT
+        formatToChampSim(reader.mInstr);
+#endif
+    }
+}
