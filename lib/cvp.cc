@@ -255,12 +255,31 @@ int main(int argc, char **argv)
    else
       beginPredictor(0, (char **)NULL);
 
+   FILE *fp;
+   FILE *instr_fp;
+   fp = fopen("CVP_Mem_PC_Addr", "w");
+   instr_fp = fopen("CVP_Instr_type.txt", "w");
+
    db_t *inst = nullptr;
    while (inst = reader.get_inst())
    {
+      if (inst->is_load || inst->is_store) {
+         fprintf(fp, "%#x: %#x\n", inst->pc, inst->addr);
+         fprintf(instr_fp, "Memory: %#x\n", inst->pc);
+      } else if (inst->insn == InstClass::condBranchInstClass ||
+            inst->insn == InstClass::uncondDirectBranchInstClass || 
+               inst->insn == InstClass::uncondIndirectBranchInstClass) {
+         fprintf(instr_fp, "Branch: %#x\n", inst->pc);
+      } else {
+         fprintf(instr_fp, "Misc: %#x\n", inst->pc);
+      }
+
       sim->step(inst);
       delete inst;
    }
+
+   fclose(fp);
+   fclose(instr_fp);
 
    endPredictor();
    sim->output();
