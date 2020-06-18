@@ -558,7 +558,8 @@ typedef struct trace_instr_format {
     unsigned long long int source_memory[NUM_INSTR_SOURCES];
 } trace_instr_format_t;
 
-void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp) {
+void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp,
+                                                            FILE *values_fp) {
     trace_instr_format_t instr_champsim;
 
     instr_champsim.ip = mInstr.mPc;
@@ -637,12 +638,22 @@ void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp) {
             mInstr.mType == InstClass::storeInstClass) ? mInstr.mEffAddr : 0;
     }
 
-    // find out if there are instructions with more than one load/store ops
-    /*if (mInstr.mType == InstClass::loadInstClass) {
-        instr_champsim.source_memory[0] = mInstr.mEffAddr;
-    } else if (mInstr.mType == InstClass::storeInstClass) {
-        instr_champsim.destination_memory[0] = mInstr.mEffAddr;
-    }*/
+    /* Write register values as well. - skip branch instructions */
+    if (!isBranch) {
+        fwrite(&mInstr.mPc, sizeof(mInstr.mPc), 1, values_fp);
+        fwrite(&numOutRegs, sizeof(numOutRegs), 1, values_fp);
+        if (numOutRegs > 1) { // are there any other instructions? - no, only load pairs
+            std::cout << mInstr.mPc << std::endl;
+        }
+        if (numOutRegs > 0) {
+            for (int i=0; i<numOutRegs; i++) {
+                fwrite(&mInstr.mOutRegs[i], sizeof(mInstr.mOutRegs[i]), 1, values_fp);
+                fwrite(&mInstr.mOutRegsValues[i], sizeof(mInstr.mOutRegsValues[i]),
+                                                                        1, values_fp);
+            }
+        }
+    }
+    
 
 #if INSTR_MEMORY == 1
     if (mInstr.mType == InstClass::loadInstClass ||
@@ -681,8 +692,8 @@ void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp) {
 
 int main(int argc, char **argv) {
     std::cout << "CVP --> ChampSim trace converter" << std::endl;
-    char *name;
-    FILE *out, *mem_fp;
+    char *name, *values_name;
+    FILE *out, *mem_fp, *values_fp;
 
     if (argc < 2) {
         std::cout << "insufficient arguments - where's your trace?" << std::endl;
@@ -693,9 +704,15 @@ int main(int argc, char **argv) {
     } else {
         name = "trace.out";
     }
+    if (argc == 4) {
+        values_name = argv[2];
+    } else {
+        values_name = "trace_values.out";
+    }
 
 #if INSTR_WRITE_TEXT == 0
         out = fopen(name, "wb"); //write binary
+        values_fp = fopen(values_name, "wb");
 #else
         out = fopen(name, "w"); //write text
 #endif
@@ -710,11 +727,12 @@ int main(int argc, char **argv) {
     while(reader.readInstr()) {
         //reader.mInstr.printInstr();
 #ifdef CHAMPSIM_FORMAT
-        formatToChampSim(reader.mInstr, out, mem_fp);
+        formatToChampSim(reader.mInstr, out, mem_fp, values_fp);
 #endif
     }
 
     fclose(out);
+    fclose(values_fp);
 
 #if INSTR_MEMORY == 1
     fclose(mem_fp);

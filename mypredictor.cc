@@ -22,7 +22,7 @@ bool getPrediction(uint64_t seq_no, uint64_t pc, uint8_t piece, uint64_t &predic
 	uint64_t secondLevelTag = (pc >> 16);
 
 	// Accessing the second level table. Note that both tables are the same size so we are using the same mask.
-	uint64_t secondLevelIndex = predictor.firstLevelTable[firstLevelIndex].predictTimeIndex & 							predictor.firstLevelMask;
+	uint64_t secondLevelIndex = predictor.firstLevelTable[firstLevelIndex].predictTimeIndex & predictor.firstLevelMask;
 
 	if (secondLevelTag != predictor.secondLevelTable[secondLevelIndex].tag)
 	{
