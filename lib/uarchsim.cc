@@ -65,6 +65,8 @@ uarchsim_t::uarchsim_t() : BP(20, 16, 20, 16, 64), window(WINDOW_SIZE),
    // stats
    num_load = 0;
    num_load_sqmiss = 0;
+   num_instr_vp_eligible = 0;
+   num_instr_vp_speculate = 0;
 }
 
 uarchsim_t::~uarchsim_t()
@@ -111,6 +113,10 @@ void uarchsim_t::step(db_t *inst)
       else
       {
          speculate = getPrediction(seq_no, inst->pc, piece, predicted_value);
+         if (speculate)
+            num_instr_vp_speculate++;
+         if (predictable)
+            num_instr_vp_eligible++;
          speculativeUpdate(seq_no, predictable, ((predictable && speculate) ? ((predicted_value == inst->D.value) ? 1 : 0) : 2),
                            inst->pc, inst->next_pc, (InstClass)inst->insn, piece,
                            (inst->A.valid ? inst->A.log_reg : 0xDEADBEEF),
@@ -222,7 +228,7 @@ void uarchsim_t::step(db_t *inst)
       // Account for execution latency.
       exec_cycle += latency;
    }
-
+   
    // Update the instruction count and simulation cycle (max. completion cycle among all scheduled instructions).
    num_inst += 1;
    cycle = MAX(cycle, exec_cycle);
@@ -410,4 +416,8 @@ void uarchsim_t::output()
    printf("prediction-eligible instructions = %ld\n", num_eligible);
    printf("correct predictions              = %ld (%.2f%%)\n", num_correct, (100.0 * (double)num_correct / (double)num_eligible));
    printf("incorrect predictions            = %ld (%.2f%%)\n", num_incorrect, (100.0 * (double)num_incorrect / (double)num_eligible));
+   
+   // vp
+   printf("Number of instructions eligible for VP %d\n",num_instr_vp_eligible);
+   printf("Number of instructions speculate for VP %d\n",num_instr_vp_speculate);
 }

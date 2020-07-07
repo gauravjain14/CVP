@@ -89,7 +89,8 @@ class uarchsim_t {
       // stats
       uint64_t num_load;
       uint64_t num_load_sqmiss;
-
+      uint64_t num_instr_vp_speculate;
+      uint64_t num_instr_vp_eligible;
    public:
       uarchsim_t();
       ~uarchsim_t();

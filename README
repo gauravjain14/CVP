@@ -64,3 +64,13 @@ usage:	./cvp
 -------------------------------------------------------------------------------------------------------------------------------
 ./cvp -F 16,0,0,0,0 -b -d -v -p 1M.gz >> README
 -------------------------------------------------------------------------------------------------------------------------------
+
+# Update: for converting CVP trace to Champsim trace, use the following:
+
+-- Compiling:
+g++ -g -o cvp_champsim_trace_converter lib/gzstream.cc cvp_champsim_trace_converter.cpp -std=c++14 -lz
+
+-- Execution:
+./cvp_champsim_trace_converter <input_file> <output_file_name> <output_file_values_name>
+
+./cvp_champsim_trace_converter compute_int_0.gz trace_compute_int_0.out trace_values_compute_int_0.out

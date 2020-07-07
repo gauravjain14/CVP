@@ -72,7 +72,7 @@ ridiculously excessive white spaces should be removed. */
 
 #define CHAMPSIM_FORMAT     1 // take it as make argument later
 #define INSTR_WRITE_TEXT    0
-#define INSTR_MEMORY        1
+#define INSTR_MEMORY        0
 
 // special registers that help us identify branches
 #define REG_STACK_POINTER 6
@@ -579,6 +579,7 @@ void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp,
     uint8_t isBranch = (mInstr.mType == InstClass::condBranchInstClass) ||
                     (mInstr.mType == InstClass::uncondDirectBranchInstClass) ||
                     (mInstr.mType == InstClass::uncondIndirectBranchInstClass);
+
     instr_champsim.is_branch = isBranch;
     instr_champsim.branch_taken = ((mInstr.mType == InstClass::uncondDirectBranchInstClass) ||
                     (mInstr.mType == InstClass::uncondIndirectBranchInstClass)) ||
@@ -591,38 +592,19 @@ void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp,
     * would use all the four source registers */
     for (int i=0; i<NUM_INSTR_SOURCES; i++) {
         instr_champsim.source_registers[i] = 0;
-        
-        if (i < numInRegs) {
-            if (i == 0) {
-                instr_champsim.source_registers[i] = 
-                    (mInstr.mType == InstClass::condBranchInstClass) ? REG_FLAGS :
-                    (mInstr.mType == InstClass::uncondDirectBranchInstClass ||
-                        mInstr.mType == InstClass::uncondIndirectBranchInstClass) ?
-                                            REG_OTHER : mInstr.mInRegs[i];
-            } else if (i == 1) {
-                instr_champsim.source_registers[i] = 
-                    (mInstr.mType == InstClass::condBranchInstClass) ?
-                                REG_INSTRUCTION_POINTER : mInstr.mInRegs[i];
-            } else {
-                instr_champsim.source_registers[i] = mInstr.mInRegs[i];
-            }
-        }
+
+        if (i < numInRegs)
+            instr_champsim.source_registers[i] = mInstr.mInRegs[i];
     }
 
     uint8_t numOutRegs = std::min(mInstr.mNumOutRegs, 
                                         (uint8_t)NUM_INSTR_DESTINATIONS);
+
     for (int i=0; i<NUM_INSTR_DESTINATIONS; i++) {
         instr_champsim.destination_registers[i] = 0;
 
-        if (i < numOutRegs) {
-            // Champsim wants dest_reg set to REG_INSTR_PTR for all three cases
-            // REG_INSTRUCTION_POINTER - write_ip
-            // REG_STACK_POINTER - write_sp - seems like never used
-            if (isBranch && i == 0)
-                instr_champsim.destination_registers[i] = REG_INSTRUCTION_POINTER;
-            else
-                instr_champsim.destination_registers[i] = mInstr.mOutRegs[i];
-        }
+        if (i < numOutRegs)
+            instr_champsim.destination_registers[i] = mInstr.mOutRegs[i];
     }
 
     /* only one source/destination memory value is required, right? 
@@ -638,22 +620,16 @@ void formatToChampSim(CVPTraceReader::Instr mInstr, FILE *out, FILE *mem_fp,
             mInstr.mType == InstClass::storeInstClass) ? mInstr.mEffAddr : 0;
     }
 
-    /* Write register values as well. - skip branch instructions */
-    if (!isBranch) {
-        fwrite(&mInstr.mPc, sizeof(mInstr.mPc), 1, values_fp);
-        fwrite(&numOutRegs, sizeof(numOutRegs), 1, values_fp);
-        if (numOutRegs > 1) { // are there any other instructions? - no, only load pairs
-            std::cout << mInstr.mPc << std::endl;
-        }
-        if (numOutRegs > 0) {
-            for (int i=0; i<numOutRegs; i++) {
-                fwrite(&mInstr.mOutRegs[i], sizeof(mInstr.mOutRegs[i]), 1, values_fp);
-                fwrite(&mInstr.mOutRegsValues[i], sizeof(mInstr.mOutRegsValues[i]),
-                                                                        1, values_fp);
-            }
+    fwrite(&mInstr.mPc, sizeof(mInstr.mPc), 1, values_fp);
+    fwrite(&mInstr.mType, sizeof(uint8_t), 1, values_fp);
+    fwrite(&numOutRegs, sizeof(numOutRegs), 1, values_fp);
+    if (numOutRegs > 0) {
+        for (int i=0; i<numOutRegs; i++) {
+            fwrite(&mInstr.mOutRegs[i], sizeof(mInstr.mOutRegs[i]), 1, values_fp);
+            fwrite(&mInstr.mOutRegsValues[i], sizeof(mInstr.mOutRegsValues[i]),
+                                                                    1, values_fp);
         }
     }
-    
 
 #if INSTR_MEMORY == 1
     if (mInstr.mType == InstClass::loadInstClass ||
@@ -699,18 +675,20 @@ int main(int argc, char **argv) {
         std::cout << "insufficient arguments - where's your trace?" << std::endl;
         exit(1);
     }
-    if (argc == 3) {
-        name = argv[1];
+    if (argc >= 3) {
+        name = argv[2];
     } else {
         name = "trace.out";
     }
-    if (argc == 4) {
-        values_name = argv[2];
+    if (argc >= 4) {
+        values_name = argv[3];
     } else {
         values_name = "trace_values.out";
     }
 
 #if INSTR_WRITE_TEXT == 0
+		std::cout << "Trace out " << name << std::endl;
+		std::cout << "Trace Values out " << values_name << std::endl;
         out = fopen(name, "wb"); //write binary
         values_fp = fopen(values_name, "wb");
 #else
@@ -730,7 +708,6 @@ int main(int argc, char **argv) {
         formatToChampSim(reader.mInstr, out, mem_fp, values_fp);
 #endif
     }
-
     fclose(out);
     fclose(values_fp);
 
